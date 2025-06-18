@@ -9,6 +9,20 @@ import bisect
 # Lista para almacenar eventos
 eventos = []
 
+
+paises_riesgosos = {
+    "RU",  # Russia
+    "CN",  # China
+    "IR",  # Iran
+    "KP",  # North Korea
+    "VN",  # Vietnam
+    "PK",  # Pakistan
+    "SY",  # Syria
+    "BY",  # Belarus
+    "UA"   # Ukraine
+}
+
+
 # Cargar dataset limpio con rangos IP
 file_path = "./SIEM/regiones_IP/IP2LOCATION-LITE-DB1.CSV"
 df = pd.read_csv(file_path, header=None, names=[
@@ -17,10 +31,11 @@ df = pd.read_csv(file_path, header=None, names=[
 # Convertir IPs a enteros para comparar más fácilmente
 ip_starts = df["ip_from"].tolist()
 ip_ends = df["ip_to"].tolist()
-countries = df["country_name"].tolist()
+countries = df["country_code"].tolist()
 
 # Regex para detectar IPs privadas
 regex = r"\b(?:10\.(?:\d{1,3})\.(?:\d{1,3})\.(?:\d{1,3})|172\.(?:1[6-9]|2[0-9]|3[0-1])\.(?:\d{1,3})\.(?:\d{1,3})|192\.168\.(?:\d{1,3})\.(?:\d{1,3}))\b"
+
 
 # Función para procesar cada paquete
 
@@ -45,6 +60,8 @@ def procesar_paquete(pkt):
             "pais": buscar_pais_por_ip(pkt[IP].src)
         }
 
+        evento["alerta"] = "Trafico desde pais de alto riesgo" if evento["pais"] in paises_riesgosos else "OK"
+
         # Añadir puertos si es TCP o UDP
         if TCP in pkt:
             evento["src_port"] = pkt[TCP].sport
@@ -57,8 +74,9 @@ def procesar_paquete(pkt):
         else:
             evento["layer"] = "Otro"
 
-        eventos.append(evento)
-        print(evento)
+        if evento["alerta"] != "OK":
+            eventos.append(evento)
+            print(evento)
 
 
 # Captura en vivo durante 30 segundos o 100 paquetes
