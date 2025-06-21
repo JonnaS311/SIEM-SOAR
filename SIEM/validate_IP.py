@@ -29,6 +29,3 @@ def check_ip_reputation(ip_address):
         pass
 
     return False
-
-
-print(check_ip_reputation("103.228.136.100"))
