@@ -21,6 +21,7 @@ paises_riesgosos = {
     "PK",  # Pakistan
     "SY",  # Syria
     "BY",  # Belarus
+    "UZ",
     "UA"   # Ukraine
 }
 
