@@ -1,5 +1,6 @@
 import asyncio
 import json
+import time
 from pysnmp.hlapi.asyncio import (
     get_cmd as getCmd,
     SnmpEngine,
@@ -17,7 +18,7 @@ TARGET = '192.168.1.1'
 COMMUNITY = 'public'
 INTERFACE_INDEX = 3
 INTERVAL = 5
-THRESHOLD = 104_857_600 # Umbral de ~100 Megabytes
+THRESHOLD = 2_857_600 # Umbral de ~100 Megabytes
 OID = f'1.3.6.1.2.1.2.2.1.10.{INTERFACE_INDEX}' # ifInOctets para la interfaz 3
 ARCHIVO_EVENTOS = 'eventos_DDOS.jsonl'
 
@@ -46,7 +47,6 @@ async def snmp_get(snmp_engine, oid):
 
         if errorIndication:
             print(f"Error de SNMP: {errorIndication}")
-            return None
         elif errorStatus:
             error_msg = errorStatus.prettyPrint()
             error_details = varBinds[int(errorIndex) - 1] if errorIndex else '?'
@@ -87,7 +87,6 @@ async def get_interface_name_by_index(hostname, community, interface_index):
 
     if errorIndication:
         print(f"Error en la consulta SNMP: {errorIndication}")
-        return None
     elif errorStatus:
         print(f"Error en la respuesta SNMP: {errorStatus.prettyPrint()} en {errorIndex and varBinds[int(errorIndex) - 1][0] or '?'}")
         return None
@@ -159,9 +158,14 @@ async def monitor_ddos():
 
 # --- Punto de entrada principal del script ---
 if __name__ == "__main__":
-    try:
-        asyncio.run(monitor_ddos())
-    except KeyboardInterrupt:
-        print("\n\nMonitoreo detenido por el usuario. ¡Adiós!")
-    except Exception as e:
-        print(f"\nSe ha producido un error crítico no manejado: {e}")
+    while True:
+        try:
+            asyncio.run(monitor_ddos())
+        except KeyboardInterrupt:
+            print("\n\nMonitoreo detenido por el usuario. ¡Adiós!")
+        except TypeError:
+            print("Intefaz dada de baja...")
+            time.sleep(10)
+            continue
+        except Exception as e:
+            print(f"\nSe ha producido un error crítico no manejado: {e}")

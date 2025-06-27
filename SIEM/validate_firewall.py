@@ -1,4 +1,5 @@
 import asyncio
+import json
 import time
 from pysnmp.hlapi.asyncio import (
     get_cmd as nextCommand,
@@ -14,6 +15,7 @@ from pysnmp.hlapi.asyncio import (
 COMMUNITY_STRING = 'public'
 AGENT_HOST = '192.168.1.1'
 OID_TO_WALK = '.1.3.6.1.4.1.8072.1.3.2.3.1.1.15.102.105.114.101.119.97.108.108.45.115.116.97.116.117.115'
+ARCHIVO_EVENTOS = 'eventos_firewall.jsonl'
 
 async def perform_snmp_walk(host, community, oid):
     """
@@ -49,6 +51,15 @@ async def perform_snmp_walk(host, community, oid):
             if not found_firewall_status:
                 print("🔴 Estado Disable o no encontrado 'firewall-status'.")
                 # enviar alerta aquí
+                evento = dict()
+                evento["firewall"] = 0
+                evento["host"] = AGENT_HOST
+                try:
+                    with open(ARCHIVO_EVENTOS, "a") as f:
+                        # json.dumps convierte el diccionario de Python a un string JSON
+                        f.write(json.dumps(evento) + "\n")
+                except IOError as e:
+                    print(f"❌ Error al escribir en el archivo: {e}")
 
     except Exception as e:
         print(f"Excepción inesperada durante SNMP walk: {e}")
@@ -60,7 +71,7 @@ async def main():
     while True:
         await perform_snmp_walk(AGENT_HOST, COMMUNITY_STRING, OID_TO_WALK)
         print("-" * 30) # Separador para facilitar la lectura entre checks
-        await asyncio.sleep(3) # Espera 30 segundos antes de la próxima verificación
+        await asyncio.sleep(8) # Espera 30 segundos antes de la próxima verificación
 
 if __name__ == "__main__":
     asyncio.run(main())
